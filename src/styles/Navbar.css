@@ -1,0 +1,13 @@
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-self: center;
+  gap: 1.5rem;
+}

@@ -1,0 +1,23 @@
+.dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-wrapper select {
+  background-color: transparent;
+  border: none;
+  color: var(--text-color);
+  appearance: none;
+  min-width: 105px;
+  font-size: 16px;
+  padding-right: 1.5em;
+  text-align: center;
+}
+
+.dropdown-wrapper .custom-wrapper {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}

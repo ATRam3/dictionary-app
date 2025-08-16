@@ -1,0 +1,16 @@
+:root {
+  /*default for light mode */
+
+  --bg-color: white;
+  --text-color: rgb(36, 36, 36);
+}
+
+[data-theme='dark'] {
+  --bg-color: rgb(36, 36, 36);
+  --text-color: white;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}

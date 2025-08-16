@@ -2,4 +2,49 @@
   border: none;
   background-color: transparent;
   align-self: center;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.toggle-on {
+  position: relative;
+  width: 40px;
+  height: 20px;
+  background-color: var(--toggle-color);
+  border-radius: 2rem;
+  cursor: pointer;
+}
+
+.toggle-on::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: 2px;
+  top: 2px;
+  background-color: white;
+  border-radius: 50%;
+}
+
+.toggle-off {
+  position: relative;
+  width: 40px;
+  height: 20px;
+  background-color: var(--toggle-color);
+  border-radius: 2rem;
+  cursor: pointer;
+}
+
+.toggle-off::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  right: 2px;
+  top: 2px;
+  background-color: white;
+  border-radius: 50%;
 }

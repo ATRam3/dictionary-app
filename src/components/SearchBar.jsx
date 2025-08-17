@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import submitImg from "../assets/images/icon-search.svg";
 
 const SearchBar = () => {
@@ -6,8 +6,21 @@ const SearchBar = () => {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const abortRef = useRef(null);
 
-  const searchWord = async () => {
+  useEffect(() => {
+    return () => {
+      if (abortRef.current) abortRef.current.abort();
+    };
+  }, []);
+
+  const searchWord = async (entry) => {
+    if (abortRef.current) abortRef.current.abort();
+
+    const controller = new AbortController();
+
+    abortRef.current = controller;
+
     if (!word.trim()) {
       setError("please enter a word to search");
       return;
@@ -19,8 +32,13 @@ const SearchBar = () => {
 
       setLoading(true);
 
-      const api = `https://api.dictionaryapi.dev/api/v2/entries/en/${word.trim()}`;
-      const response = await fetch(api);
+      const api = `https://api.dictionaryapi.dev/api/v2/entries/en/${entry.trim()}`;
+      const response = await fetch(api, { signal: controller.signal });
+
+      if (response.status === 404) {
+        setError(`No definition found for "${entry}".`);
+        return;
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -28,23 +46,32 @@ const SearchBar = () => {
       }
 
       const data = await response.json();
+
+      if (!Array.isArray(data) || data.length === 0) {
+        throw Error("No entry found.");
+      }
       setResult(data);
     } catch (err) {
-      setError(err.message);
+      if (err.name === "AbortError") {
+        console.log("previous request is cancelled");
+        return;
+      }
+      setError(err.message || "An unexpected error occured.");
     } finally {
       setLoading(false);
+      abortRef.current = null;
     }
   };
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
-      searchWord();
+      searchWord(word);
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    searchWord();
+    searchWord(word);
   };
 
   return (
@@ -56,57 +83,95 @@ const SearchBar = () => {
             id="searchInput"
             value={word}
             onChange={(e) => setWord(e.target.value)}
+            disabled={loading}
             onKeyDown={handleKeyDown}
             placeholder="Enter a word"
           />
 
-          <button type="submit">
-            <img src={submitImg} alt="" />
+          <button type="submit" disabled={loading}>
+            <img src={submitImg} alt="search" />
           </button>
         </form>
       </div>
 
-      {loading && <p>⏳ Loading...</p>}
-      {error && <p>error: {error}</p>}
+      <div aria-live="polite">
+        {loading && <p>⏳ Loading...</p>}
+        {error && <p>error: {error}</p>}
+      </div>
+
       {result && (
         <div className="result">
-          <div className="word-sound">
-            <div className="word">
-              <h1>{result[0].word}</h1>
-              {result[0].phonetics.find((p) => p.text).text && (
-                <p>{result[0].phonetics.find((p) => p.text).text}</p>
-              )}
+          {/* save access for the first entry*/}
 
-              {result[0].phonetics?.find((p) => p.audio) && (
-                <audio controls>
-                  <source
-                    src={result[0].phonetics.find((p) => p.audio).audio}
-                    type="audio/mpeg"
-                  />
-                </audio>
-              )}
-            </div>
+          {(() => {
+            const entry = result[0];
 
-            {result[0].meanings.map((meaning, index) => (
-              <div key={index}>
-                <h2>{meaning.partOfSpeech}</h2>
-                <h3>Meaning</h3>
+            if (!entry) return null;
 
-                {meaning.definitions.map((d, i) => (
-                  <div>
+            const phonetics = entry.phonetics ?? [];
+            const phoneticsWithText = phonetics.find((p) => !!p.text);
+            const phoneticsWithAudio = phonetics.find((p) => !!p.audio);
+
+            return (
+              <article>
+                <header>
+                  {/*word and pronounciation*/}
+                  <h1>{entry.word}</h1>
+
+                  {phoneticsWithText?.text && <p>{phoneticsWithText.text}</p>}
+                  {phoneticsWithAudio?.audio && (
+                    <audio controls>
+                      <source src={phoneticsWithAudio.audio} />
+                    </audio>
+                  )}
+                </header>
+
+                {/*Definition*/}
+
+                {entry.meanings.map((meaning, mi) => (
+                  <section key={`${meaning.partOfSpeach ?? "pos"} - ${mi}`}>
+                    <h2>{meaning.partOfSpeach}</h2>
+                    <h3>Meaning</h3>
                     <ul>
-                      <li key={i}>
-                        {d.definition}
-                        {d?.example && <h4>{d.example}</h4>}
-                      </li>
+                      {meaning.definitions.map((d, i) => (
+                        <li key={`${d.definition ?? i}`}>
+                          <p>{d.definition}</p>
+                          {d?.example && <blockquote>{d.example}</blockquote>}
+                          {d?.synonyms?.length > 0 && (
+                            <p>
+                              Synonyms <span>{d.synonyms.join(", ")}</span>
+                            </p>
+                          )}
+                          {d?.antonyms?.length > 0 && (
+                            <p>
+                              Antonyms <span>{d.antonyms.join(", ")}</span>
+                            </p>
+                          )}
+                        </li>
+                      ))}
                     </ul>
-
-                    <span>{d.synonyms && <p>{d.synonyms}</p>}</span>
-                  </div>
+                  </section>
                 ))}
-              </div>
-            ))}
-          </div>
+
+                {/*source*/}
+
+                {entry.sourceUrls?.length > 0 && (
+                  <footer>
+                    <h4>Source</h4>
+                    <ul>
+                      {entry.sourceUrls.map((url, i) => (
+                        <li key={url ?? i}>
+                          <a href="url" target="_blank">
+                            {url}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </footer>
+                )}
+              </article>
+            );
+          })()}
         </div>
       )}
     </>

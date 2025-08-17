@@ -8,21 +8,27 @@ const SearchBar = () => {
   const [error, setError] = useState(null);
 
   const searchWord = async () => {
-    const api = "https://api.dictionaryapi.dev/api/v2/entries/en/<word>";
+    if (!word.trim()) {
+      setError("please enter a word to search");
+      return;
+    }
 
     try {
       setError(null);
       setResult(null);
 
       setLoading(true);
+
+      const api = `https://api.dictionaryapi.dev/api/v2/entries/en/${word.trim()}`;
       const response = await fetch(api);
 
       if (!response.ok) {
-        setError("Field to fetch the data. ", error);
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Word not found");
       }
 
       const data = await response.json();
-      setResult(data[0]);
+      setResult(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -36,10 +42,15 @@ const SearchBar = () => {
     }
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    searchWord();
+  };
+
   return (
     <>
       <div className="search-input-form">
-        <form>
+        <form onSubmit={handleSubmit}>
           <input
             type="search"
             id="searchInput"
@@ -49,22 +60,55 @@ const SearchBar = () => {
             placeholder="Enter a word"
           />
 
-          <button type="submit" onClick={searchWord}>
+          <button type="submit">
             <img src={submitImg} alt="" />
           </button>
         </form>
       </div>
 
-      <div className="result">
-        {loading && <p>⏳ Loading...</p>}
-        {error && <p>error: {error}</p>}
-        {result && (
-          <div>
-            <h1>{result.word}</h1>
-            <p>{result.definitions[0].definition[0]}</p>
+      {loading && <p>⏳ Loading...</p>}
+      {error && <p>error: {error}</p>}
+      {result && (
+        <div className="result">
+          <div className="word-sound">
+            <div className="word">
+              <h1>{result[0].word}</h1>
+              {result[0].phonetics.find((p) => p.text).text && (
+                <p>{result[0].phonetics.find((p) => p.text).text}</p>
+              )}
+
+              {result[0].phonetics?.find((p) => p.audio) && (
+                <audio controls>
+                  <source
+                    src={result[0].phonetics.find((p) => p.audio).audio}
+                    type="audio/mpeg"
+                  />
+                </audio>
+              )}
+            </div>
+
+            {result[0].meanings.map((meaning, index) => (
+              <div key={index}>
+                <h2>{meaning.partOfSpeech}</h2>
+                <h3>Meaning</h3>
+
+                {meaning.definitions.map((d, i) => (
+                  <div>
+                    <ul>
+                      <li key={i}>
+                        {d.definition}
+                        {d?.example && <h4>{d.example}</h4>}
+                      </li>
+                    </ul>
+
+                    <span>{d.synonyms && <p>{d.synonyms}</p>}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </>
   );
 };

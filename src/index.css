@@ -4,12 +4,14 @@
   --bg-color: white;
   --text-color: rgb(36, 36, 36);
   --toggle-color: rgb(68, 68, 68);
+  --input-color: rgb(243, 242, 242);
 }
 
-[data-theme='dark'] {
+[data-theme="dark"] {
   --bg-color: rgb(36, 36, 36);
   --text-color: white;
   --toggle-color: rgb(189, 62, 189);
+  --input-color: rgb(68, 68, 68);
 }
 
 body {

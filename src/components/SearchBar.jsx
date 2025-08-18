@@ -1,12 +1,24 @@
 import React, { useState, useRef, useEffect } from "react";
 import submitImg from "../assets/images/icon-search.svg";
+import "../styles/SearchBar.css";
+import { CircleLoader } from "react-spinners";
+import playIcon from "../assets/images/icon-play.svg";
+const PauseIconInline = () => (
+  // small inline SVG for pause (no extra asset needed)
+  <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+    <rect x="5" y="4" width="4" height="16" />
+    <rect x="15" y="4" width="4" height="16" />
+  </svg>
+);
 
 const SearchBar = () => {
   const [word, setWord] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isPlaying, setPlaying] = useState(false);
   const abortRef = useRef(null);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     return () => {
@@ -74,13 +86,64 @@ const SearchBar = () => {
     searchWord(word);
   };
 
+  // 1) Hook to set audio src when result changes
+  useEffect(() => {
+    if (!result) return;
+    const entry = result[0];
+    const audioUrl = entry?.phonetics?.find(
+      (p) => p.audio && p.audio.trim()
+    )?.audio;
+    const audio = audioRef.current;
+    if (audio && audioUrl) {
+      audio.src = audioUrl;
+      audio.load();
+    }
+  }, [result]);
+
+  // 2) Event listeners to keep isPlaying in sync
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onPlay = () => setPlaying(true);
+    const onPause = () => setPlaying(false);
+    const onEnded = () => setPlaying(false);
+
+    audio.addEventListener("play", onPlay);
+    audio.addEventListener("pause", onPause);
+    audio.addEventListener("ended", onEnded);
+
+    return () => {
+      audio.removeEventListener("play", onPlay);
+      audio.removeEventListener("pause", onPause);
+      audio.removeEventListener("ended", onEnded);
+    };
+  }, [result]);
+
+  // 3) togglePlay (correct)
+  const togglePlay = async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    try {
+      if (audio.paused) {
+        await audio.play();
+      } else {
+        audio.pause();
+      }
+      // event listeners will update setPlaying; still okay to set a fallback:
+      setPlaying(!audio.paused);
+    } catch (err) {
+      console.error("Audio play failed:", err);
+    }
+  };
+
   return (
-    <>
+    <div className="container">
       <div className="search-input-form">
         <form onSubmit={handleSubmit}>
           <input
             type="search"
             id="searchInput"
+            className="search-input"
             value={word}
             onChange={(e) => setWord(e.target.value)}
             disabled={loading}
@@ -88,17 +151,18 @@ const SearchBar = () => {
             placeholder="Enter a word"
           />
 
-          <button type="submit" disabled={loading}>
+          <button type="submit" disabled={loading} className="submit-input">
             <img src={submitImg} alt="search" />
           </button>
         </form>
       </div>
 
-      <div aria-live="polite">
-        {loading && <p>⏳ Loading...</p>}
-        {error && <p>error: {error}</p>}
-      </div>
-
+      {loading && (
+        <div aria-live="polite" className="search-state">
+          <CircleLoader color="var(--toggle-color)" size={100} />
+        </div>
+      )}
+      {error && <p>error: {error}</p>}
       {result && (
         <div className="result">
           {/* save access for the first entry*/}
@@ -116,13 +180,46 @@ const SearchBar = () => {
               <article>
                 <header>
                   {/*word and pronounciation*/}
-                  <h1>{entry.word}</h1>
+                  <div>
+                    <h1>{entry.word}</h1>
+                    {phoneticsWithText?.text && <p>{phoneticsWithText.text}</p>}
+                  </div>
 
-                  {phoneticsWithText?.text && <p>{phoneticsWithText.text}</p>}
                   {phoneticsWithAudio?.audio && (
-                    <audio controls>
-                      <source src={phoneticsWithAudio.audio} />
-                    </audio>
+                    <>
+                      <audio ref={audioRef} style={{ display: "none" }}>
+                        <source
+                          src={phoneticsWithAudio.audio}
+                          type="audio/mpeg"
+                        />
+                        Your browser does not support the audio element.
+                      </audio>
+
+                      {/*custom play and pause btn */}
+
+                      <button
+                        type="button"
+                        onClick={togglePlay}
+                        aria-pressed={isPlaying}
+                        aria-label={
+                          isPlaying
+                            ? "Pause pronunciation"
+                            : "Play pronunciation"
+                        }
+                        className="play-button"
+                      >
+                        {/* show play icon when NOT playing, pause icon when playing */}
+                        {!isPlaying ? (
+                          <img
+                            src={playIcon}
+                            alt="Play pronunciation"
+                            className="play-icon"
+                          />
+                        ) : (
+                          <PauseIconInline />
+                        )}
+                      </button>
+                    </>
                   )}
                 </header>
 
@@ -174,7 +271,7 @@ const SearchBar = () => {
           })()}
         </div>
       )}
-    </>
+    </div>
   );
 };
 

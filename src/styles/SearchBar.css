@@ -2,7 +2,7 @@
   width: 100%;
   display: grid;
   place-items: center;
-  margin-top: 15px;
+  margin-top: 30px;
 }
 
 .search-input-form form {
@@ -10,7 +10,7 @@
   width: 90%;
   height: 60px;
   border-radius: 20px;
-  background-color: var(--input-color);
+  background-color: var(--input-bg-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,9 +23,9 @@
   width: 100%;
   height: 100%;
   padding: 1.5rem;
-  color: var(--text-color);
+  color: var(--input-color);
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .search-input::placeholder {
@@ -54,7 +54,7 @@
 }
 
 .result {
-  padding: 2rem;
+  padding: 1.5rem;
 }
 
 header {
@@ -81,4 +81,72 @@ header {
 
 .play-button img:hover {
   box-shadow: 0 2px 6px var(--toggle-color);
+}
+
+.word {
+  margin: 0;
+  font-size: 2.5rem;
+  color: var(--text-color);
+}
+.phonetics {
+  color: rgb(189, 62, 189);
+}
+
+.part-of-speech {
+  display: flex;
+  align-items: center;
+  color: var(--text-color);
+  gap: 1rem;
+}
+
+.part-of-speech::after {
+  content: "";
+  flex: 1;
+  height: 1.3px;
+  border-radius: 2rem;
+  margin-top: 5px;
+  background-color: var(--line-color);
+}
+
+.meaning,
+.synonyms,
+.antonyms {
+  color: var(--title-color);
+  font-size: 15px;
+}
+
+.definitions {
+  margin: 0;
+  padding: 0 0 0 1.5rem;
+}
+
+.definition {
+  position: relative;
+  list-style: none;
+  color: var(--text-color);
+}
+.definition::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  left: -16px;
+  top: 5px;
+  position: absolute;
+  background-color: rgb(189, 62, 189);
+  border-radius: 50%;
+}
+
+.synonyms {
+  margin: 2rem 0 0 0;
+  padding: 0;
+}
+
+.synonyms span,
+.antonyms span {
+  color: rgb(189, 62, 189);
+}
+
+.error {
+  color: red;
+  margin-left: 3rem;
 }

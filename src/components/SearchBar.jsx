@@ -5,7 +5,7 @@ import { CircleLoader } from "react-spinners";
 import playIcon from "../assets/images/icon-play.svg";
 const PauseIconInline = () => (
   // small inline SVG for pause (no extra asset needed)
-  <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+  <svg width="35" height="35" viewBox="0 0 24 24" aria-hidden="true">
     <rect x="5" y="4" width="4" height="16" />
     <rect x="15" y="4" width="4" height="16" />
   </svg>
@@ -137,7 +137,7 @@ const SearchBar = () => {
   };
 
   return (
-    <div className="container">
+    <div>
       <div className="search-input-form">
         <form onSubmit={handleSubmit}>
           <input
@@ -162,7 +162,7 @@ const SearchBar = () => {
           <CircleLoader color="var(--toggle-color)" size={100} />
         </div>
       )}
-      {error && <p>error: {error}</p>}
+      {error && <p className="error">error: {error}</p>}
       {result && (
         <div className="result">
           {/* save access for the first entry*/}
@@ -181,8 +181,10 @@ const SearchBar = () => {
                 <header>
                   {/*word and pronounciation*/}
                   <div>
-                    <h1>{entry.word}</h1>
-                    {phoneticsWithText?.text && <p>{phoneticsWithText.text}</p>}
+                    <h1 className="word">{entry.word}</h1>
+                    {phoneticsWithText?.text && (
+                      <p className="phonetics">{phoneticsWithText.text}</p>
+                    )}
                   </div>
 
                   {phoneticsWithAudio?.audio && (
@@ -227,24 +229,36 @@ const SearchBar = () => {
 
                 {entry.meanings.map((meaning, mi) => (
                   <section key={`${meaning.partOfSpeach ?? "pos"} - ${mi}`}>
-                    <h2>{meaning.partOfSpeach}</h2>
-                    <h3>Meaning</h3>
-                    <ul>
+                    <h2 className="part-of-speech">{meaning.partOfSpeech}</h2>
+                    <h3 className="meaning">Meaning</h3>
+                    <ul className="definitions">
                       {meaning.definitions.map((d, i) => (
-                        <li key={`${d.definition ?? i}`}>
-                          <p>{d.definition}</p>
-                          {d?.example && <blockquote>{d.example}</blockquote>}
+                        <>
+                          <li
+                            key={`${d.definition ?? i}`}
+                            className="definition"
+                          >
+                            <p>{d.definition}</p>
+                            {d?.example && (
+                              <p className="example">
+                                <i>''{d.example}''</i>
+                              </p>
+                            )}
+                          </li>
+
                           {d?.synonyms?.length > 0 && (
-                            <p>
-                              Synonyms <span>{d.synonyms.join(", ")}</span>
+                            <p className="synonyms">
+                              <i>Synonyms </i>&nbsp;&nbsp;&nbsp;
+                              <span>{d.synonyms.join(", ")}</span>
                             </p>
                           )}
                           {d?.antonyms?.length > 0 && (
-                            <p>
-                              Antonyms <span>{d.antonyms.join(", ")}</span>
+                            <p className="antonyms">
+                              <i>Antonyms </i>&nbsp;&nbsp;&nbsp;
+                              <span>{d.antonyms.join(", ")}</span>
                             </p>
                           )}
-                        </li>
+                        </>
                       ))}
                     </ul>
                   </section>

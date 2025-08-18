@@ -2,19 +2,29 @@
   /*default for light mode */
 
   --bg-color: white;
-  --text-color: rgb(36, 36, 36);
-  --toggle-color: rgb(68, 68, 68);
-  --input-color: rgb(243, 242, 242);
+  --text-color: rgb(66, 66, 66);
+  --title-color: rgb(177, 177, 177);
+  --toggle-color: rgb(138, 138, 138);
+  --input-bg-color: rgb(243, 242, 242);
+  --input-color: rgb(34, 34, 34);
+  --line-color: rgb(219, 219, 219);
 }
 
 [data-theme="dark"] {
   --bg-color: rgb(36, 36, 36);
   --text-color: white;
+  --title-color: rgb(70, 70, 70);
   --toggle-color: rgb(189, 62, 189);
-  --input-color: rgb(68, 68, 68);
+  --input-bg-color: rgb(68, 68, 68);
+  --input-color: rgb(236, 236, 236);
+  --line-color: rgb(90, 90, 90);
 }
 
 body {
   background-color: var(--bg-color);
-  color: var(--text-color);
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
 }

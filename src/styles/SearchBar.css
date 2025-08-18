@@ -150,3 +150,15 @@ header {
   color: red;
   margin-left: 3rem;
 }
+
+footer .source {
+  color: var(--title-color);
+}
+
+footer a {
+  color: var(--text-color);
+}
+
+footer ul li {
+  list-style: none;
+}

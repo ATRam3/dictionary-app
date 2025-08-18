@@ -267,8 +267,8 @@ const SearchBar = () => {
                 {/*source*/}
 
                 {entry.sourceUrls?.length > 0 && (
-                  <footer>
-                    <h4>Source</h4>
+                  <footer className="footer">
+                    <h4 className="source">Source</h4>
                     <ul>
                       {entry.sourceUrls.map((url, i) => (
                         <li key={url ?? i}>

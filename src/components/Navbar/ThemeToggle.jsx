@@ -4,7 +4,7 @@ import darkTheme from "../../assets/images/icon-moon-purple.svg";
 import "../../styles/ThemeToggle.css";
 
 const ThemeToggle = () => {
-  const [theme, setTheme] = useState("light");
+  const [theme, setTheme] = useState("dark");
 
   //This code retrieves the saved theme from local storage
   // and sets the data-theme attribute on the <html> tag to either

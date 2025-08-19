@@ -12,15 +12,14 @@ const FONT_MAP = {
 
 const FontToggle = () => {
   // Default to Serif
-  const [font, setFont] = useState("Serif");
-
-  // Load saved font from localStorage on first render
-  useEffect(() => {
+  const [font, setFont] = useState(() => {
+    // Load saved font from localStorage on first render
     const savedFont = localStorage.getItem("font");
+
     if (savedFont && FONT_MAP[savedFont]) {
-      setFont(savedFont);
+      return savedFont || "serif";
     }
-  }, []);
+  });
 
   // Apply font + save to localStorage whenever font changes
   useEffect(() => {

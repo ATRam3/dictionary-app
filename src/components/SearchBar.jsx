@@ -12,8 +12,24 @@ const PauseIconInline = () => (
 );
 
 const SearchBar = () => {
-  const [word, setWord] = useState("");
-  const [result, setResult] = useState(null);
+  const [word, setWord] = useState(() => {
+    const savedWord = localStorage.getItem("word");
+
+    return savedWord || "";
+  });
+  const [result, setResult] = useState(() => {
+    const savedResult = localStorage.getItem("result");
+    if (!savedResult) return;
+
+    try {
+      return JSON.parse(savedResult);
+    } catch (e) {
+      console.log("Invalid JSON in localStorage for 'result': ", savedResult);
+      return null;
+    }
+
+    return JSON.parse(savedResult) ?? null;
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isPlaying, setPlaying] = useState(false);
@@ -21,10 +37,16 @@ const SearchBar = () => {
   const audioRef = useRef(null);
 
   useEffect(() => {
+    localStorage.setItem("word", word);
+
+    if (result) {
+      localStorage.setItem("result", JSON.stringify(result));
+    }
+
     return () => {
       if (abortRef.current) abortRef.current.abort();
     };
-  }, []);
+  }, [word, result]);
 
   const searchWord = async (entry) => {
     if (abortRef.current) abortRef.current.abort();
@@ -228,16 +250,13 @@ const SearchBar = () => {
                 {/*Definition*/}
 
                 {entry.meanings.map((meaning, mi) => (
-                  <section key={`${meaning.partOfSpeach ?? "pos"} - ${mi}`}>
+                  <section key={`${meaning.partOfSpeech ?? "pos"} - ${mi}`}>
                     <h2 className="part-of-speech">{meaning.partOfSpeech}</h2>
                     <h3 className="meaning">Meaning</h3>
                     <ul className="definitions">
                       {meaning.definitions.map((d, i) => (
-                        <>
-                          <li
-                            key={`${d.definition ?? i}`}
-                            className="definition"
-                          >
+                        <div key={`${d.definition ?? i}`}>
+                          <li className="definition">
                             <p>{d.definition}</p>
                             {d?.example && (
                               <p className="example">
@@ -258,7 +277,7 @@ const SearchBar = () => {
                               <span>{d.antonyms.join(", ")}</span>
                             </p>
                           )}
-                        </>
+                        </div>
                       ))}
                     </ul>
                   </section>

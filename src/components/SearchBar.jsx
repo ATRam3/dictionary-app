@@ -36,14 +36,20 @@ const SearchBar = () => {
       console.log("Invalid JSON in localStorage for 'result': ", savedResult);
       return null;
     }
-
-    return JSON.parse(savedResult) ?? null;
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isPlaying, setPlaying] = useState(false);
+
   const abortRef = useRef(null);
+  const inputRef = useRef(null);
   const audioRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (abortRef.current) abortRef.current.abort();
+    };
+  });
 
   useEffect(() => {
     localStorage.setItem("word", word);
@@ -51,23 +57,15 @@ const SearchBar = () => {
     if (result) {
       localStorage.setItem("result", JSON.stringify(result));
     }
-
-    return () => {
-      if (abortRef.current) abortRef.current.abort();
-    };
   }, [word, result]);
 
   const searchWord = async (entry) => {
+    const q = entry?.toString().trim();
+    console.log("searchWord -> normalized q:", q);
+
     if (abortRef.current) abortRef.current.abort();
-
     const controller = new AbortController();
-
     abortRef.current = controller;
-
-    if (!word.trim()) {
-      setError("please enter a word to search");
-      return;
-    }
 
     try {
       setError(null);
@@ -75,7 +73,7 @@ const SearchBar = () => {
 
       setLoading(true);
 
-      const api = `https://api.dictionaryapi.dev/api/v2/entries/en/${entry.trim()}`;
+      const api = `https://api.dictionaryapi.dev/api/v2/entries/en/${q}`;
       const response = await fetch(api, { signal: controller.signal });
 
       if (response.status === 404) {
@@ -104,6 +102,12 @@ const SearchBar = () => {
       setLoading(false);
       abortRef.current = null;
     }
+  };
+
+  const handlePick = (pickedWord) => {
+    setWord(pickedWord);
+    searchWord(pickedWord);
+    inputRef.current?.focus();
   };
 
   const handleKeyDown = (e) => {
@@ -198,10 +202,8 @@ const SearchBar = () => {
       {!loading && !error && !result && (
         <EmptyState
           suggestions={starterSuggestions}
-          onPick={(word) => {
-            setWord(word);
-            searchWord(word);
-          }}
+          onPick={handlePick}
+          disabled={loading}
         />
       )}
       {result && (
@@ -310,7 +312,11 @@ const SearchBar = () => {
                     <ul>
                       {entry.sourceUrls.map((url, i) => (
                         <li key={url ?? i}>
-                          <a href="url" target="_blank">
+                          <a
+                            href={url}
+                            rel="noopener noreferrer"
+                            target="_blank"
+                          >
                             {url}
                           </a>
                         </li>

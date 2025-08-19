@@ -8,6 +8,8 @@
   --input-bg-color: rgb(243, 242, 242);
   --input-color: rgb(34, 34, 34);
   --line-color: rgb(219, 219, 219);
+  --btn-color: rgb(240, 239, 239);
+  --btn-hover-color: rgb(228, 226, 226);
 }
 
 [data-theme="dark"] {
@@ -18,6 +20,8 @@
   --input-bg-color: rgb(68, 68, 68);
   --input-color: rgb(236, 236, 236);
   --line-color: rgb(90, 90, 90);
+  --btn-color: rgb(177, 177, 177);
+  --btn-hover-color: rgb(58, 58, 58);
 }
 
 body {

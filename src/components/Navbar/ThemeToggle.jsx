@@ -11,13 +11,10 @@ const ThemeToggle = () => {
   // 'dark' or 'light' based on the saved value.
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") === "dark";
+    const savedTheme = localStorage.getItem("theme") || "dark";
     if (savedTheme) {
       setTheme(savedTheme);
-      document.documentElement.setAttribute(
-        "data-theme",
-        savedTheme ? "dark" : "light"
-      );
+      document.documentElement.setAttribute("data-theme", savedTheme);
     }
   }, []);
 

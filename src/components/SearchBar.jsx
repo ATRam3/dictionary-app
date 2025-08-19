@@ -12,8 +12,8 @@ const starterSuggestions = [
   "translate",
   "apple",
 ];
+
 const PauseIconInline = () => (
-  // small inline SVG for pause (no extra asset needed)
   <svg width="35" height="35" viewBox="0 0 24 24" aria-hidden="true">
     <rect x="5" y="4" width="4" height="16" />
     <rect x="15" y="4" width="4" height="16" />
@@ -21,22 +21,17 @@ const PauseIconInline = () => (
 );
 
 const SearchBar = () => {
-  const [word, setWord] = useState(() => {
-    const savedWord = localStorage.getItem("word");
-
-    return savedWord || "";
-  });
+  const [word, setWord] = useState(() => localStorage.getItem("word") || "");
   const [result, setResult] = useState(() => {
-    const savedResult = localStorage.getItem("result");
-    if (!savedResult) return;
-
+    const saved = localStorage.getItem("result");
+    if (!saved) return null;
     try {
-      return JSON.parse(savedResult);
-    } catch (e) {
-      console.log("Invalid JSON in localStorage for 'result': ", savedResult);
+      return JSON.parse(saved);
+    } catch {
       return null;
     }
   });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isPlaying, setPlaying] = useState(false);
@@ -45,73 +40,91 @@ const SearchBar = () => {
   const inputRef = useRef(null);
   const audioRef = useRef(null);
 
+  // cleanup only on unmount (do not abort when word/result changes)
   useEffect(() => {
     return () => {
       if (abortRef.current) abortRef.current.abort();
     };
-  });
+  }, []);
 
+  // persist word/result to localStorage
   useEffect(() => {
-    localStorage.setItem("word", word);
-
-    if (result) {
-      localStorage.setItem("result", JSON.stringify(result));
+    try {
+      localStorage.setItem("word", word);
+      if (result) localStorage.setItem("result", JSON.stringify(result));
+    } catch (e) {
+      console.warn("localStorage write failed", e);
     }
   }, [word, result]);
 
+  // Definitive search function
   const searchWord = async (entry) => {
     const q = entry?.toString().trim();
-    console.log("searchWord -> normalized q:", q);
+    console.log("searchWord called with entry:", entry, "normalized q:", q);
 
+    // Validate early — IMPORTANT
+    if (!q) {
+      setError("please enter a word to search");
+      return;
+    }
+
+    // cancel previous request if any
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
+    setError(null);
+    setResult(null);
+    setLoading(true);
+
     try {
-      setError(null);
-      setResult(null);
-
-      setLoading(true);
-
-      const api = `https://api.dictionaryapi.dev/api/v2/entries/en/${q}`;
+      const api = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(q)}`;
+      console.log("fetching:", api);
       const response = await fetch(api, { signal: controller.signal });
 
       if (response.status === 404) {
-        setError(`No definition found for "${entry}".`);
+        setError(`No definition found for "${q}".`);
         return;
       }
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Word not found");
+        let msg = `Request failed (${response.status})`;
+        try {
+          const errData = await response.json();
+          msg = errData.message || errData.title || msg;
+        } catch (_) {}
+        throw new Error(msg);
       }
 
       const data = await response.json();
+      if (!Array.isArray(data) || data.length === 0)
+        throw new Error("No entry found.");
 
-      if (!Array.isArray(data) || data.length === 0) {
-        throw Error("No entry found.");
-      }
       setResult(data);
     } catch (err) {
       if (err.name === "AbortError") {
-        console.log("previous request is cancelled");
+        console.log("search aborted:", q);
         return;
       }
-      setError(err.message || "An unexpected error occured.");
+      console.error("searchWord error:", err);
+      setError(err.message || "An unexpected error occurred.");
     } finally {
       setLoading(false);
       abortRef.current = null;
     }
   };
 
+  // handle example pick -> fill input and search immediately
   const handlePick = (pickedWord) => {
+    if (loading) return;
     setWord(pickedWord);
     searchWord(pickedWord);
-    inputRef.current?.focus();
+    inputRef.current?.focus?.();
   };
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
+      e.preventDefault();
       searchWord(word);
     }
   };
@@ -121,21 +134,7 @@ const SearchBar = () => {
     searchWord(word);
   };
 
-  // 1) Hook to set audio src when result changes
-  useEffect(() => {
-    if (!result) return;
-    const entry = result[0];
-    const audioUrl = entry?.phonetics?.find(
-      (p) => p.audio && p.audio.trim()
-    )?.audio;
-    const audio = audioRef.current;
-    if (audio && audioUrl) {
-      audio.src = audioUrl;
-      audio.load();
-    }
-  }, [result]);
-
-  // 2) Event listeners to keep isPlaying in sync
+  // audio event handlers to keep isPlaying in sync
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -154,17 +153,12 @@ const SearchBar = () => {
     };
   }, [result]);
 
-  // 3) togglePlay (correct)
   const togglePlay = async () => {
     const audio = audioRef.current;
     if (!audio) return;
     try {
-      if (audio.paused) {
-        await audio.play();
-      } else {
-        audio.pause();
-      }
-      // event listeners will update setPlaying; still okay to set a fallback:
+      if (audio.paused) await audio.play();
+      else audio.pause();
       setPlaying(!audio.paused);
     } catch (err) {
       console.error("Audio play failed:", err);
@@ -172,10 +166,11 @@ const SearchBar = () => {
   };
 
   return (
-    <div>
+    <div className="search-bar-root">
       <div className="search-input-form">
         <form onSubmit={handleSubmit}>
           <input
+            ref={inputRef}
             type="search"
             id="searchInput"
             className="search-input"
@@ -184,9 +179,15 @@ const SearchBar = () => {
             disabled={loading}
             onKeyDown={handleKeyDown}
             placeholder="Enter a word"
+            aria-label="Word to look up"
           />
 
-          <button type="submit" disabled={loading} className="submit-input">
+          <button
+            type="submit"
+            disabled={loading}
+            className="submit-input"
+            aria-label="Search"
+          >
             <img src={submitImg} alt="search" />
           </button>
         </form>
@@ -197,6 +198,7 @@ const SearchBar = () => {
           <CircleLoader color="var(--toggle-color)" size={100} />
         </div>
       )}
+
       {error && <p className="error">error: {error}</p>}
 
       {!loading && !error && !result && (
@@ -206,23 +208,23 @@ const SearchBar = () => {
           disabled={loading}
         />
       )}
+
       {result && (
         <div className="result">
-          {/* save access for the first entry*/}
-
           {(() => {
             const entry = result[0];
-
             if (!entry) return null;
 
             const phonetics = entry.phonetics ?? [];
             const phoneticsWithText = phonetics.find((p) => !!p.text);
-            const phoneticsWithAudio = phonetics.find((p) => !!p.audio);
+            const phoneticsWithAudio = phonetics.find(
+              (p) => !!p.audio && p.audio.trim() !== ""
+            );
+            const audioUrl = phoneticsWithAudio?.audio ?? null;
 
             return (
               <article>
-                <header>
-                  {/*word and pronounciation*/}
+                <header className="word-header">
                   <div>
                     <h1 className="word">{entry.word}</h1>
                     {phoneticsWithText?.text && (
@@ -230,18 +232,13 @@ const SearchBar = () => {
                     )}
                   </div>
 
-                  {phoneticsWithAudio?.audio && (
+                  {audioUrl && (
                     <>
-                      <audio ref={audioRef} style={{ display: "none" }}>
-                        <source
-                          src={phoneticsWithAudio.audio}
-                          type="audio/mpeg"
-                        />
-                        Your browser does not support the audio element.
-                      </audio>
-
-                      {/*custom play and pause btn */}
-
+                      <audio
+                        ref={audioRef}
+                        src={audioUrl}
+                        style={{ display: "none" }}
+                      />
                       <button
                         type="button"
                         onClick={togglePlay}
@@ -253,7 +250,6 @@ const SearchBar = () => {
                         }
                         className="play-button"
                       >
-                        {/* show play icon when NOT playing, pause icon when playing */}
                         {!isPlaying ? (
                           <img
                             src={playIcon}
@@ -268,43 +264,39 @@ const SearchBar = () => {
                   )}
                 </header>
 
-                {/*Definition*/}
-
-                {entry.meanings.map((meaning, mi) => (
-                  <section key={`${meaning.partOfSpeech ?? "pos"} - ${mi}`}>
+                {entry.meanings?.map((meaning, mi) => (
+                  <section
+                    key={`${meaning.partOfSpeech ?? "pos"}-${mi}`}
+                    className="meaning-block"
+                  >
                     <h2 className="part-of-speech">{meaning.partOfSpeech}</h2>
                     <h3 className="meaning">Meaning</h3>
                     <ul className="definitions">
-                      {meaning.definitions.map((d, i) => (
-                        <div key={`${d.definition ?? i}`}>
-                          <li className="definition">
-                            <p>{d.definition}</p>
-                            {d?.example && (
-                              <p className="example">
-                                <i>''{d.example}''</i>
-                              </p>
-                            )}
-                          </li>
-
+                      {meaning.definitions?.map((d, i) => (
+                        <li key={`${d.definition ?? i}`} className="definition">
+                          <p>{d.definition}</p>
+                          {d?.example && (
+                            <p className="example">
+                              <i>“{d.example}”</i>
+                            </p>
+                          )}
                           {d?.synonyms?.length > 0 && (
                             <p className="synonyms">
-                              <i>Synonyms </i>&nbsp;&nbsp;&nbsp;
+                              <i>Synonyms</i>:{" "}
                               <span>{d.synonyms.join(", ")}</span>
                             </p>
                           )}
                           {d?.antonyms?.length > 0 && (
                             <p className="antonyms">
-                              <i>Antonyms </i>&nbsp;&nbsp;&nbsp;
+                              <i>Antonyms</i>:{" "}
                               <span>{d.antonyms.join(", ")}</span>
                             </p>
                           )}
-                        </div>
+                        </li>
                       ))}
                     </ul>
                   </section>
                 ))}
-
-                {/*source*/}
 
                 {entry.sourceUrls?.length > 0 && (
                   <footer className="footer">
@@ -314,8 +306,8 @@ const SearchBar = () => {
                         <li key={url ?? i}>
                           <a
                             href={url}
-                            rel="noopener noreferrer"
                             target="_blank"
+                            rel="noopener noreferrer"
                           >
                             {url}
                           </a>

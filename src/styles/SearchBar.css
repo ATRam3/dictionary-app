@@ -169,3 +169,50 @@ footer a {
 footer ul li {
   list-style: none;
 }
+
+.empty-state {
+  margin-top: 28px;
+  text-align: center;
+  color: var(--text);
+  padding: 28px;
+  border-radius: 10px;
+  background: var(--surface); /* subtle background makes it feel intentional */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+.empty-illustration {
+  margin: 0 auto 10px;
+  opacity: 0.9;
+}
+.empty-state h2 {
+  margin: 6px 0;
+  font-size: 1.25rem;
+}
+.empty-state .muted {
+  color: var(--muted);
+  margin: 6px 0 12px;
+}
+
+.examples,
+.random {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.example-btn,
+.random-btn {
+  background: transparent;
+  border: 1px solid var(--muted);
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.example-btn:hover,
+.random-btn:hover {
+  background: var(--muted);
+  color: white;
+}

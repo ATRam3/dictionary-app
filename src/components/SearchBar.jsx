@@ -3,6 +3,15 @@ import submitImg from "../assets/images/icon-search.svg";
 import "../styles/SearchBar.css";
 import { CircleLoader } from "react-spinners";
 import playIcon from "../assets/images/icon-play.svg";
+import EmptyState from "../components/EmptyState";
+
+const starterSuggestions = [
+  "hello",
+  "example",
+  "computer",
+  "translate",
+  "apple",
+];
 const PauseIconInline = () => (
   // small inline SVG for pause (no extra asset needed)
   <svg width="35" height="35" viewBox="0 0 24 24" aria-hidden="true">
@@ -185,6 +194,16 @@ const SearchBar = () => {
         </div>
       )}
       {error && <p className="error">error: {error}</p>}
+
+      {!loading && !error && !result && (
+        <EmptyState
+          suggestions={starterSuggestions}
+          onPick={(word) => {
+            setWord(word);
+            searchWord(word);
+          }}
+        />
+      )}
       {result && (
         <div className="result">
           {/* save access for the first entry*/}
